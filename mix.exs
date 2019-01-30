@@ -24,7 +24,7 @@ defmodule ScenicDriverOLEDBonnet.MixProject do
       {:scenic, "~> 0.9"},
       {:scenic_driver_gpio, "~> 0.1"},
       {:scenic_driver_nerves_rpi, "~> 0.9"},
-      {:ssd1306, "~> 0.1", path: "../ssd1306"},
+      {:ssd1306, "~> 0.1", github: "nerves-training/ssd1306"},
       {:rpi_fb_capture, "~> 0.1"}
     ]
   end
