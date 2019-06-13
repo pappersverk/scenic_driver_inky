@@ -26,7 +26,7 @@ defmodule ScenicDriverInky.MixProject do
       {:scenic, "~> 0.9"},
       {:scenic_driver_nerves_rpi, "~> 0.9"},
       {:rpi_fb_capture, "~> 0.1"},
-      {:inky, path: "../inky"}
+      {:inky, github: "pappersverk/inky"}
     ]
   end
 
