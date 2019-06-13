@@ -38,13 +38,15 @@ defmodule ScenicDriverInky do
 
           inky = state.inky
 
+          tolerance = 50
+
           {_, _, inky} =
             Enum.reduce(pixels, {0, 0, inky}, fn pixel, {x, y, inky} ->
               {r, g, b} = pixel
 
-              r = if r > 0, do: 255, else: 0
-              g = if g > 0, do: 255, else: 0
-              b = if b > 0, do: 255, else: 0
+              r = if r > tolerance, do: 255, else: 0
+              g = if g > tolerance, do: 255, else: 0
+              b = if b > tolerance, do: 255, else: 0
               pixel = {r, g, b}
 
               color =
