@@ -23,7 +23,8 @@ defmodule ScenicDriverInky do
     vp_supervisor = vp_supervisor(viewport)
     {:ok, _} = Driver.start_link({vp_supervisor, size, %{module: Scenic.Driver.Nerves.Rpi}})
 
-    inky = Inky.init(:phat, :red)
+    type = config[:type]
+    accent = config[:accent]
 
     dithering =
       cond do
@@ -56,15 +57,20 @@ defmodule ScenicDriverInky do
         true -> @default_color_high
       end
 
+    {:ok, inky_pid} = Inky.start_link(%{type: type, accent: accent})
+
+    {width, height} = size
     {:ok, cap} =
-      RpiFbCapture.start_link(width: inky.display.width, height: inky.display.height, display: 0)
+      RpiFbCapture.start_link(width: width, height: height, display: 0)
 
     send(self(), :capture)
 
     {:ok,
      %{
        viewport: viewport,
-       inky: inky,
+       size: size,
+       inky_pid: inky_pid,
+       inky_accent: accent,
        cap: cap,
        last_crc: -1,
        dithering: dithering,
@@ -81,54 +87,53 @@ defmodule ScenicDriverInky do
 
     crc = :erlang.crc32(frame.data)
 
-    inky =
-      cond do
-        crc != state.last_crc ->
-          pixels = for <<r::8, g::8, b::8 <- frame.data>>, do: {r, g, b}
+    cond do
+      crc != state.last_crc ->
+        {width, _height} = state.size
+        dithering = state.dithering
 
-          inky = state.inky
-          dithering = state.dithering
+        color_high = state.color_high
+        color_low = state.color_low
+        color_affinity = state.color_affinity
 
-          color_high = state.color_high
-          color_low = state.color_low
-          color_affinity = state.color_affinity
+        pixels = for <<r::8, g::8, b::8 <- frame.data>>, do: {r, g, b}
 
-          {_, _, inky} =
-            Enum.reduce(pixels, {0, 0, inky}, fn pixel, {x, y, inky} ->
-              {r, g, b} = pixel
+        {_, _, pixel_data} =
+          Enum.reduce(pixels, {0, 0, %{}}, fn pixel, {x, y, pixel_data} ->
+            {r, g, b} = pixel
 
-              r = clamp_color(r, x, y, color_high, color_low, color_affinity, dithering)
-              g = clamp_color(g, x, y, color_high, color_low, color_affinity, dithering)
-              b = clamp_color(b, x, y, color_high, color_low, color_affinity, dithering)
-              pixel = {r, g, b}
+            r = clamp_color(r, x, y, color_high, color_low, color_affinity, dithering)
+            g = clamp_color(g, x, y, color_high, color_low, color_affinity, dithering)
+            b = clamp_color(b, x, y, color_high, color_low, color_affinity, dithering)
+            pixel = {r, g, b}
 
-              color =
-                case pixel do
-                  {0, 0, 0} -> :black
-                  {255, 255, 255} -> :white
-                  _ -> inky.display.accent
-                end
+            color =
+              case pixel do
+                {0, 0, 0} -> :black
+                {255, 255, 255} -> :white
+                _ -> state.inky_accent
+              end
 
-              inky = Inky.set_pixel(inky, x, y, color)
+            pixel_data = Map.put(pixel_data, {x, y}, color)
 
-              {x, y} =
-                if x >= 211 do
-                  {0, y + 1}
-                else
-                  {x + 1, y}
-                end
+            {x, y} =
+              if x >= width - 1 do
+                {0, y + 1}
+              else
+                {x + 1, y}
+              end
 
-              {x, y, inky}
-            end)
+            {x, y, pixel_data}
+          end)
 
-          Inky.show(inky)
+        Inky.set_pixels(state.inky_pid, pixel_data)
 
-        true ->
-          state.inky
-      end
+      true ->
+        nil
+    end
 
     Process.send_after(self(), :capture, state.interval)
-    {:noreply, %{state | last_crc: crc, inky: inky}}
+    {:noreply, %{state | last_crc: crc}}
   end
 
   defp clamp_color(color_value, x, y, color_high, color_low, color_affinity, dithering) do
