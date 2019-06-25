@@ -60,8 +60,7 @@ defmodule ScenicDriverInky do
     {:ok, inky_pid} = Inky.start_link(%{type: type, accent: accent})
 
     {width, height} = size
-    {:ok, cap} =
-      RpiFbCapture.start_link(width: width, height: height, display: 0)
+    {:ok, cap} = RpiFbCapture.start_link(width: width, height: height, display: 0)
 
     send(self(), :capture)
 
@@ -70,7 +69,6 @@ defmodule ScenicDriverInky do
        viewport: viewport,
        size: size,
        inky_pid: inky_pid,
-       inky_accent: accent,
        cap: cap,
        last_crc: -1,
        dithering: dithering,
@@ -87,56 +85,56 @@ defmodule ScenicDriverInky do
 
     crc = :erlang.crc32(frame.data)
 
-    cond do
-      crc != state.last_crc ->
-        {width, _height} = state.size
-        dithering = state.dithering
+    if crc != state.last_crc do
+      pixel_data = process_pixels(frame.data, state)
 
-        color_high = state.color_high
-        color_low = state.color_low
-        color_affinity = state.color_affinity
-
-        pixels = for <<r::8, g::8, b::8 <- frame.data>>, do: {r, g, b}
-
-        {_, _, pixel_data} =
-          Enum.reduce(pixels, {0, 0, %{}}, fn pixel, {x, y, pixel_data} ->
-            {r, g, b} = pixel
-
-            r = clamp_color(r, x, y, color_high, color_low, color_affinity, dithering)
-            g = clamp_color(g, x, y, color_high, color_low, color_affinity, dithering)
-            b = clamp_color(b, x, y, color_high, color_low, color_affinity, dithering)
-            pixel = {r, g, b}
-
-            color =
-              case pixel do
-                {0, 0, 0} -> :black
-                {255, 255, 255} -> :white
-                _ -> state.inky_accent
-              end
-
-            pixel_data = Map.put(pixel_data, {x, y}, color)
-
-            {x, y} =
-              if x >= width - 1 do
-                {0, y + 1}
-              else
-                {x + 1, y}
-              end
-
-            {x, y, pixel_data}
-          end)
-
-        Inky.set_pixels(state.inky_pid, pixel_data)
-
-      true ->
-        nil
+      Inky.set_pixels(state.inky_pid, pixel_data)
     end
 
     Process.send_after(self(), :capture, state.interval)
     {:noreply, %{state | last_crc: crc}}
   end
 
-  defp clamp_color(color_value, x, y, color_high, color_low, color_affinity, dithering) do
+  defp process_pixels(data, %{
+         size: {width, _height},
+         dithering: dithering,
+         color_high: color_high,
+         color_low: color_low,
+         color_affinity: color_affinity
+       }) do
+    pixels = for <<r::8, g::8, b::8 <- data>>, do: {r, g, b}
+
+    {_, _, pixel_data} =
+      Enum.reduce(pixels, {0, 0, %{}}, fn pixel, {x, y, pixel_data} ->
+        {r, g, b} =
+          pixel = process_color(pixel, x, y, color_high, color_low, color_affinity, dithering)
+
+        color = pixel_to_color(pixel)
+        pixel_data = Map.put(pixel_data, {x, y}, color)
+
+        {x, y} =
+          if x >= width - 1 do
+            {0, y + 1}
+          else
+            {x + 1, y}
+          end
+
+        {x, y, pixel_data}
+      end)
+
+    pixel_data
+  end
+
+  defp process_color({r, g, b}, x, y, color_high, color_low, color_affinity, dithering) do
+    {
+      process_color(r, x, y, color_high, color_low, color_affinity, dithering),
+      process_color(g, x, y, color_high, color_low, color_affinity, dithering),
+      process_color(b, x, y, color_high, color_low, color_affinity, dithering)
+    }
+  end
+
+  defp process_color(color_value, x, y, color_high, color_low, color_affinity, dithering)
+       when is_integer(color_value) do
     if color_value > color_high do
       255
     else
@@ -175,6 +173,10 @@ defmodule ScenicDriverInky do
         end
     end
   end
+
+  defp pixel_to_color({0, 0, 0}), do: :black
+  defp pixel_to_color({255, 255, 255}), do: :white
+  defp pixel_to_color(_), do: :accent
 
   defp vp_supervisor(viewport) do
     [supervisor_pid | _] =
