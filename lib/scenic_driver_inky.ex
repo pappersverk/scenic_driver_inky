@@ -26,6 +26,12 @@ defmodule ScenicDriverInky do
     type = config[:type]
     accent = config[:accent]
 
+    opts =
+      cond do
+        is_map(config[:opts]) -> config[:opts]
+        true -> %{}
+      end
+
     dithering =
       cond do
         config[:dithering] in @dithering_options -> config[:dithering]
@@ -57,7 +63,7 @@ defmodule ScenicDriverInky do
         true -> @default_color_high
       end
 
-    {:ok, inky_pid} = Inky.start_link(%{type: type, accent: accent})
+    {:ok, inky_pid} = Inky.start_link(type, accent, opts)
 
     {width, height} = size
     {:ok, cap} = RpiFbCapture.start_link(width: width, height: height, display: 0)
@@ -106,8 +112,7 @@ defmodule ScenicDriverInky do
 
     {_, _, pixel_data} =
       Enum.reduce(pixels, {0, 0, %{}}, fn pixel, {x, y, pixel_data} ->
-        {r, g, b} =
-          pixel = process_color(pixel, x, y, color_high, color_low, color_affinity, dithering)
+        pixel = process_color(pixel, x, y, color_high, color_low, color_affinity, dithering)
 
         color = pixel_to_color(pixel)
         pixel_data = Map.put(pixel_data, {x, y}, color)
