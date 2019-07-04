@@ -1,21 +1,48 @@
-# ScenicDriverOLEDBonnet
+# Scenic Driver Inky
 
-**TODO: Add description**
+A library to provide a Scenic framework driver implementation for the Inky series of eInk displays from Pimoroni. Built on top of the pappersverk/inky library. All in Elixir.
+
+The Scenic UI framework is the easiest way to render text and geometries to your Inky through Elixir.
+
+This driver only runs on RPi devices as far as we know as it is based on the scenic rpi driver generating a framebuffer we can use.
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `scenic_driver_oled_bonnet` to your list of dependencies in `mix.exs`:
+The package can be installed
+by adding `scenic_driver_inky` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:scenic_driver_oled_bonnet, "~> 0.1.0"}
+    {:scenic_driver_inky, "~> 1.0.0"}
   ]
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/scenic_driver_oled_bonnet](https://hexdocs.pm/scenic_driver_oled_bonnet).
+## Usage
 
+This library provides the `ScenicDriverInky` driver module. A solid usage example is provided in [pappersverk/sample_scenic_inky](https://github.com/pappersverk/sample_scenic_inky). It boils down to driver configuration:
+
+```
+config :sample_scenic_inky, :viewport, %{
+  name: :main_viewport,
+  default_scene: {SampleScenicInky.Scene.Main, nil},
+  size: {212, 104},
+  opts: [scale: 1.0],
+  drivers: [
+    %{
+      module: ScenicDriverInky,
+      opts: [
+        type: :phat,
+        accent: :red,
+        opts: %{
+          border: :black
+        }
+        # dithering: :halftone
+      ]
+    }
+  ]
+}
+```
+
+For development on host, we recommend just using the glfw driver for scenic (also shown in the sample). It won't give you that sweet lo-fi representation of the Inky though, so be mindful of accidentally using all those colors when you do.

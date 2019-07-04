@@ -4,7 +4,7 @@ defmodule ScenicDriverInky.MixProject do
   def project do
     [
       app: :scenic_driver_inky,
-      version: "0.1.0",
+      version: "1.0.0",
       elixir: "~> 1.8",
       description: description(),
       package: package(),
@@ -26,7 +26,7 @@ defmodule ScenicDriverInky.MixProject do
       {:scenic, "~> 0.9"},
       {:scenic_driver_nerves_rpi, "~> 0.9"},
       {:rpi_fb_capture, "~> 0.1"},
-      {:inky, github: "pappersverk/inky"}
+      {:inky, "~> 1.0.0"}
     ]
   end
 
@@ -36,6 +36,9 @@ defmodule ScenicDriverInky.MixProject do
 
   defp package do
     %{
+      name: "scenic_driver_inky",
+      description:
+        "A library to provide a Scenic framework driver implementation for the Inky series of eInk displays from Pimoroni. Built on top of the pappersverk/inky library. All in Elixir.",
       licenses: ["Apache-2.0"],
       links: %{"GitHub" => "https://github.com/lawik/scenic_driver_inky"}
     }
