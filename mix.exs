@@ -1,6 +1,8 @@
 defmodule ScenicDriverInky.MixProject do
   use Mix.Project
 
+  @pi_targets [:rpi, :rpi0, :rpi2, :rpi3, :rpi3a]
+
   def project do
     [
       app: :scenic_driver_inky,
@@ -24,9 +26,10 @@ defmodule ScenicDriverInky.MixProject do
   defp deps do
     [
       {:scenic, "~> 0.9"},
-      {:scenic_driver_nerves_rpi, "~> 0.9"},
-      {:rpi_fb_capture, "~> 0.1"},
-      {:inky, "~> 1.0.0"}
+      {:scenic_driver_nerves_rpi, "~> 0.9", targets: @pi_targets},
+      {:rpi_fb_capture, "~> 0.1", targets: @pi_targets},
+      {:inky, "~> 1.0.0"},
+      {:ex_doc, ">= 0.0.0", only: :dev}
     ]
   end
 
