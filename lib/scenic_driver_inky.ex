@@ -63,7 +63,16 @@ defmodule ScenicDriverInky do
         true -> @default_color_high
       end
 
-    {:ok, inky_pid} = Inky.start_link(type, accent, opts)
+    inky_pid =
+      case type do
+        :impression ->
+          {:ok, pid} = Inky.start_link(type, name: Inky.ScenicDriver)
+          pid
+
+        _ ->
+          {:ok, pid} = Inky.start_link(type, accent, opts)
+          pid
+      end
 
     {width, height} = size
     {:ok, cap} = RpiFbCapture.start_link(width: width, height: height, display: 0)
