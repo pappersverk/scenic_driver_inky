@@ -149,14 +149,12 @@ defmodule ScenicDriverInky do
 
   defp process_color(color_value, x, y, color_high, color_low, color_affinity, dithering)
        when is_integer(color_value) do
-    if color_value > color_high do
-      255
-    else
-      if color_value < color_low do
-        0
-      else
-        dither(dithering, color_affinity, x, y)
-      end
+    cond do
+      color_value > color_high -> 255
+      color_value < color_low -> 0
+      color_value > 120 && color_value < 130 -> 128
+      color_value > 159 && color_value < 170 -> 165
+      true -> dither(dithering, color_affinity, x, y)
     end
   end
 
@@ -190,6 +188,11 @@ defmodule ScenicDriverInky do
 
   defp pixel_to_color({0, 0, 0}), do: :black
   defp pixel_to_color({255, 255, 255}), do: :white
+  defp pixel_to_color({0, 128, 0}), do: :green
+  defp pixel_to_color({0, 0, 255}), do: :blue
+  defp pixel_to_color({255, 0, 0}), do: :red
+  defp pixel_to_color({255, 255, 0}), do: :yellow
+  defp pixel_to_color({255, 165, 0}), do: :orange
   defp pixel_to_color(_), do: :accent
 
   defp vp_supervisor(viewport) do
