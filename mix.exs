@@ -28,7 +28,7 @@ defmodule ScenicDriverInky.MixProject do
       {:scenic, "~> 0.9"},
       {:scenic_driver_nerves_rpi, "~> 0.9", targets: @pi_targets},
       {:rpi_fb_capture, "~> 0.1", targets: @pi_targets},
-      {:inky, github: "jasonmj/inky"},
+      {:inky, "~> 1.0.0"},
       {:ex_doc, ">= 0.0.0", only: :dev}
     ]
   end
