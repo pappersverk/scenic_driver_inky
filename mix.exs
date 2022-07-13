@@ -7,7 +7,7 @@ defmodule ScenicDriverInky.MixProject do
     [
       app: :scenic_driver_inky,
       version: "1.0.0",
-      elixir: "~> 1.8",
+      elixir: "~> 1.11",
       description: description(),
       package: package(),
       start_permanent: Mix.env() == :prod,
@@ -25,8 +25,8 @@ defmodule ScenicDriverInky.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:scenic, "~> 0.9"},
-      {:scenic_driver_nerves_rpi, "~> 0.9", targets: @pi_targets},
+      {:scenic, "~> 0.11.0-beta.0"},
+      {:scenic_driver_local, "~> 0.11.0-beta.0", targets: @pi_targets},
       {:rpi_fb_capture, "~> 0.1", targets: @pi_targets},
       {:inky, "~> 1.0.0"},
       {:ex_doc, ">= 0.0.0", only: :dev}
