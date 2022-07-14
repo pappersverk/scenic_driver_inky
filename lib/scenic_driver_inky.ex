@@ -1,7 +1,6 @@
 defmodule ScenicDriverInky do
-  use Scenic.ViewPort.Driver
+  use Scenic.Driver
 
-  alias Scenic.ViewPort.Driver
   require Logger
 
   @dithering_options [:halftone, false]
@@ -19,10 +18,12 @@ defmodule ScenicDriverInky do
   @minimal_refresh_rate 100
 
   @impl true
-  def init(viewport, size, config) do
-    vp_supervisor = vp_supervisor(viewport)
-    {:ok, _} = Driver.start_link({vp_supervisor, size, %{module: Scenic.Driver.Nerves.Rpi}})
+  def validate_opts(opts), do: {:ok, opts}
 
+  @impl true
+  def init(driver, config) do
+    viewport = driver.viewport
+    config = config[:opts]
     type = config[:type]
     accent = config[:accent]
 
@@ -74,28 +75,32 @@ defmodule ScenicDriverInky do
           pid
       end
 
-    {width, height} = size
+    {width, height} = viewport.size
     {:ok, cap} = RpiFbCapture.start_link(width: width, height: height, display: 0)
 
     send(self(), :capture)
 
-    {:ok,
-     %{
-       viewport: viewport,
-       size: size,
-       inky_pid: inky_pid,
-       cap: cap,
-       last_crc: -1,
-       dithering: dithering,
-       color_affinity: color_affinity,
-       color_high: color_high,
-       color_low: color_low,
-       interval: interval
-     }}
+    state = %{
+      viewport: viewport,
+      size: viewport.size,
+      inky_pid: inky_pid,
+      cap: cap,
+      last_crc: -1,
+      dithering: dithering,
+      color_affinity: color_affinity,
+      color_high: color_high,
+      color_low: color_low,
+      interval: interval
+    }
+
+    driver = assign(driver, :state, state)
+
+    {:ok, driver}
   end
 
   @impl true
-  def handle_info(:capture, state) do
+  def handle_info(:capture, driver) do
+    state = driver.assigns.state
     {:ok, frame} = RpiFbCapture.capture(state.cap, :rgb24)
 
     crc = :erlang.crc32(frame.data)
@@ -107,7 +112,9 @@ defmodule ScenicDriverInky do
     end
 
     Process.send_after(self(), :capture, state.interval)
-    {:noreply, %{state | last_crc: crc}}
+    state = %{state | last_crc: crc}
+    driver = assign(driver, :state, state)
+    {:noreply, driver}
   end
 
   defp process_pixels(data, %{
@@ -194,13 +201,4 @@ defmodule ScenicDriverInky do
   defp pixel_to_color({255, 255, 0}), do: :yellow
   defp pixel_to_color({255, 165, 0}), do: :orange
   defp pixel_to_color(_), do: :accent
-
-  defp vp_supervisor(viewport) do
-    [supervisor_pid | _] =
-      viewport
-      |> Process.info()
-      |> get_in([:dictionary, :"$ancestors"])
-
-    supervisor_pid
-  end
 end

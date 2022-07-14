@@ -24,13 +24,17 @@ end
 This library provides the `ScenicDriverInky` driver module. A solid usage example is provided in [pappersverk/sample_scenic_inky](https://github.com/pappersverk/sample_scenic_inky). It boils down to driver configuration:
 
 ```
+# Example for two color inky devices
 config :sample_scenic_inky, :viewport, %{
   name: :main_viewport,
   default_scene: {SampleScenicInky.Scene.Main, nil},
   size: {212, 104},
   opts: [scale: 1.0],
   drivers: [
-    %{
+    [
+      module: Scenic.Driver.Local,
+    ],
+    [
       module: ScenicDriverInky,
       opts: [
         type: :phat,
@@ -40,9 +44,27 @@ config :sample_scenic_inky, :viewport, %{
         }
         # dithering: :halftone
       ]
-    }
+    ]
   ]
 }
+
+# Example for the Impression:
+config :sample_scenic_inky, :viewport,
+  name: :main_viewport,
+  default_scene: {SampleScenicInky.Scene.Main, nil},
+  size: {600, 448},
+  opts: [scale: 1.0],
+  drivers: [
+    [
+      module: Scenic.Driver.Local,
+    ],
+    [
+      module: ScenicDriverInky,
+      opts: [type: :impression, color_low: 120, dithering: false]
+    ]
+  ]
 ```
+
+Note: It is important to configure the ScenicLocalDriver because ScenicDriverInky reads from ScenicLocalDriver
 
 For development on host, we recommend just using the glfw driver for scenic (also shown in the sample). It won't give you that sweet lo-fi representation of the Inky though, so be mindful of accidentally using all those colors when you do.
