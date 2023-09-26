@@ -68,3 +68,11 @@ config :sample_scenic_inky, :viewport,
 Note: It is important to configure the ScenicLocalDriver because ScenicDriverInky reads from ScenicLocalDriver
 
 For development on host, we recommend just using the glfw driver for scenic (also shown in the sample). It won't give you that sweet lo-fi representation of the Inky though, so be mindful of accidentally using all those colors when you do.
+
+## Troubleshooting
+
+Ensure that you are also running the `Scenic.Driver.Local` (this is included in the examples above).
+And ensure that `Scenic.Driver.Local` isn't running with `scaled: true, centered: true`. If it is
+then the inky display will also end up offset because ScenicDriverInky is reading from the output of
+`Scenic.Driver.Local` (via the framebuffer).
+
